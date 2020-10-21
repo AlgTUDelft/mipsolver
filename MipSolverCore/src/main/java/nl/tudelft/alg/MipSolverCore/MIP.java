@@ -12,6 +12,8 @@ public abstract class MIP implements IModel {
 	protected Exp objectiveFunction;
 	protected double minimum = 0;
 	double mipgap = 1e-6;
+	double timeLimit = Double.MAX_VALUE;
+	protected ISolver solver;
 	
 	public MIP() {
 		constraints = new ArrayList<Constraint>();
@@ -21,7 +23,8 @@ public abstract class MIP implements IModel {
 	}
 	
 	@Override
-	public void initialize() {
+	public void initialize(ISolver solver) {
+		this.solver = solver;
 		initiliazeVars();
 		setVars();
 		setConstraints();
@@ -50,10 +53,9 @@ public abstract class MIP implements IModel {
 
 	/**
 	 * Write the model solution back to the problem instance
-	 * @param solver a reference to the solver. Only required if writeSolution tries to solve subproblems.
 	 * @throws SolverException when an error occurs in writing the solution
 	 */
-	public abstract void writeSolution(IMIPSolver solver) throws SolverException;
+	public abstract void writeSolution() throws SolverException;
 	
 	/**
 	 * Add a constraint to the model
@@ -104,6 +106,14 @@ public abstract class MIP implements IModel {
 	
 	public double getMipGap() {
 		return this.mipgap;
+	}
+	
+	public void setTimeLimit(double timeLimit) {
+		this.timeLimit = timeLimit;
+	}
+	
+	public double getTimeLimit() {
+		return timeLimit;
 	}
 	
 	/**
@@ -158,13 +168,23 @@ public abstract class MIP implements IModel {
 	 * @param val the values, or value array to fix the variable to
 	 */
 	public void fixVariable(Object var, Object val) {
+		fixVariable(var,val, CMP.EQ);
+	}
+	
+	/**
+	 * Add constrains to the MIP model to fix a list of variables
+	 * @param var the Variable, or Variable array to fix
+	 * @param val the values, or value array to fix the variable to
+	 * @param cmp the comparator
+	 */
+	public void fixVariable(Object var, Object val, CMP cmp) {
 		if(var.getClass().isArray()) {
 			Object[] vars = (Object[]) var;
 			for(int i=0; i<vars.length; i++)
 				fixVariable(vars[i], 
-					val.getClass().isArray() ? Array.get(val, i): val);
+					val.getClass().isArray() ? Array.get(val, i): val, cmp);
 		} else if(var instanceof Variable) {
-			addConstraint(new LinExp(var), new LinExp(val), CMP.EQ, "fix_"+((Variable) var).getName());
+			addConstraint(new LinExp(var), new LinExp(val), cmp, "fix_"+((Variable) var).getName());
 		} else {
 			assert false;
 		}

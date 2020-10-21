@@ -1,7 +1,7 @@
 package nl.tudelft.alg.MipSolverCore;
 
 /**
- * A lagrangian elaxation Solver
+ * A lagrangian relaxation Solver
  * @param <P> the problem class to solve
  */
 public class LRSolver<P extends IProblem> implements ISolver {
@@ -9,6 +9,7 @@ public class LRSolver<P extends IProblem> implements ISolver {
 	boolean minimize = true;
 	boolean debug = false;
 	double timeLimit = Double.MAX_VALUE;
+	double subTimeLimit = Double.MAX_VALUE;
 	double mipgap = 1e-4;
 	LRModel<P> instance;
 	
@@ -29,11 +30,6 @@ public class LRSolver<P extends IProblem> implements ISolver {
 	}
 
 	@Override
-	public void setTimeLimit(double value) {
-		this.timeLimit = value;
-	}
-
-	@Override
 	public void setMipGap(double value) {
 		this.mipgap = value;
 	}
@@ -50,24 +46,32 @@ public class LRSolver<P extends IProblem> implements ISolver {
 	 * @throws SolverException when an exception occurs in building or solving the model
 	 */
 	protected double mipBuildAndSolve(MIP model) throws SolverException {
-		model.initialize();
+		model.initialize(mipsolver);
 		mipsolver.build(model);
 		mipsolver.setMipGap(mipgap);
-		mipsolver.setTimeLimit(timeLimit);
+		if(debug) mipsolver.save("mip.lp");
 		return mipsolver.solve();
 	}
 
 	@Override
 	public double solve() throws SolverException {
+		long start = System.nanoTime();
 		LRProblem<P> relax = instance.getLagrangianProblem();
 		while(relax.checkend()) {
-			for(int e = 0; e< instance.getNSubproblems(); e++) {
+			for(int e = 0; e < instance.getNSubproblems(); e++) {
+				double remaining = instance.getTimeLimit() - (System.nanoTime() - start) / 1e9;
+				if(remaining <= 0) break;
 				MIP model = instance.getSubproblemModel(e, relax);
+				model.setTimeLimit(Math.min(remaining, instance.getSubTimeLimit()));
 				mipBuildAndSolve(model);
 			}
+			instance.finishSubProblems();
+			double remaining = instance.getTimeLimit() - (System.nanoTime() - start) / 1e9;
+			if(remaining <= 0) break;
 			relax.setlowerObj();
 			relax.addTolowerObj();
 			MIP model = instance.getMasterProblemModel(relax);
+			model.setTimeLimit(Math.min(remaining, instance.getTimeLimit()));
 			mipBuildAndSolve(model);
 			relax.updateMultipliers();
 			relax.newiteration();

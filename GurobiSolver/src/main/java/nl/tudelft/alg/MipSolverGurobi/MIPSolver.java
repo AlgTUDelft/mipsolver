@@ -37,7 +37,6 @@ public class MIPSolver implements IMIPSolver {
 	MIP mipInstance;
 	boolean minimize = true;
 	boolean solveAsLP = false;
-	double timeLimit = Double.MAX_VALUE;
 	double mipgap = 1e-4;
 	
 	public MIPSolver() throws SolverException {
@@ -70,7 +69,7 @@ public class MIPSolver implements IMIPSolver {
 			model = new GRBModel(env);
 			model.set(GRB.StringAttr.ModelName, this.mipInstance.getName());
 			model.set(GRB.DoubleParam.MIPGap, mipgap);
-			model.set(GRB.DoubleParam.TimeLimit, timeLimit);
+			model.set(GRB.DoubleParam.TimeLimit, this.mipInstance.getTimeLimit());
 			
 			addVariables();
 	
@@ -143,16 +142,6 @@ public class MIPSolver implements IMIPSolver {
 		mipgap = value;
 		try {
 			model.getEnv().set(GRB.DoubleParam.MIPGap, value);
-		} catch (GRBException e) {
-			throw new SolverException(e);
-		}
-	}
-	
-	@Override
-	public void setTimeLimit(double value) throws SolverException {
-		timeLimit = value;
-		try {
-			model.getEnv().set(GRB.DoubleParam.TimeLimit, value);
 		} catch (GRBException e) {
 			throw new SolverException(e);
 		}
@@ -251,7 +240,7 @@ public class MIPSolver implements IMIPSolver {
 			for (Variable v : mipInstance.getVars()) {
 				v.setSolution(varMap.get(v).get(GRB.DoubleAttr.X));
 			}
-			mipInstance.writeSolution(this);
+			mipInstance.writeSolution();
 			return model.get(GRB.DoubleAttr.ObjVal);
 		} catch (GRBException e) {
 			throw new SolverException("Exception in solving the model. Gurobi error " + e.getErrorCode() + ": " + e.getMessage(), e);

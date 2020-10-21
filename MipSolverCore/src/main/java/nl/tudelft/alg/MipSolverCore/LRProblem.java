@@ -25,9 +25,9 @@ public abstract class LRProblem<P extends IProblem> {
 	}
 	
 	public void InitializeGradientParameters() {
-		maxIter = 200;
+		maxIter = 6;
 		maxStep = 1;
-		iteration = 1;
+		iteration = 0;
 		counter1 = 0;
 		counter2 = 0;
 		idealGAP = 0.01;
@@ -36,21 +36,23 @@ public abstract class LRProblem<P extends IProblem> {
 		upobject=new double[maxIter];
 		lowobject=new double[maxIter];
 		
-		parFi =0.25;
+		parFi = 0.25;
 		parB = 2;
-		parC = 100;
+		parC = 15;
 		parD = 2;
-		parF = 20;
+		parF = 2;
 	}
 
 	public boolean checkend() {
-		this.gap[iteration] = Math.abs((bestObj-lowerObj)/bestObj);
-		return !(gap[iteration] < idealGAP || iteration+1 == maxIter);
+		if (iteration == 0) return true;
+		this.gap[iteration-1] = Math.abs((bestObj-lowerObj)/bestObj);
+		System.out.println(String.format("%d/%d:\t%f\t%f\t%f", iteration, maxIter, bestObj, lowerObj, this.gap[iteration-1]));
+		return !(gap[iteration-1] < idealGAP || iteration+1 > maxIter);
 	}
 
 	public void setlowerObj() {
 		lowerObj = 0;
-		for(int e =0; e<instance.getNSubproblems(); e++) 
+		for(int e = 0; e<instance.getNSubproblems(); e++) 
 			lowerObj += lowerObjPerSubproblem[e];
 	}
 
@@ -82,8 +84,12 @@ public abstract class LRProblem<P extends IProblem> {
 		this.upperObj = sol;
 	}
 	
-	public int getiteration() {
+	public int getIteration() {
 		return iteration;
+	}
+	
+	public int getMaxIterations() {
+		return maxIter;
 	}
 	
 	public void setLBObjPerSubproblem(int e, double sol) {

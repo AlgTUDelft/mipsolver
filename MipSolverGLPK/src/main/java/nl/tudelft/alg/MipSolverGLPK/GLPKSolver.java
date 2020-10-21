@@ -73,6 +73,7 @@ public class GLPKSolver implements IMIPSolver {
 		debug("build model");
 		prob = GLPK.glp_create_prob();
 		iocp = new_iocp(iocp);
+		iocp.setTm_lim((int) (mip.getTimeLimit() * 1000)); //milliseconds
 		varMap = new HashMap<Variable, Integer>();
 		// Create variables
 		nVariables = mip.getVars().size();
@@ -202,7 +203,7 @@ public class GLPKSolver implements IMIPSolver {
 				double val = GLPK.glp_mip_col_val(prob, varMap.get(v));
 				v.setSolution(val);
 			}
-			mip.writeSolution(this);
+			mip.writeSolution();
 			return GLPK.glp_mip_obj_val(prob);
 		} else {
 			debug("The problem could not be solved.");
@@ -275,11 +276,6 @@ public class GLPKSolver implements IMIPSolver {
 	@Override
 	public void setSolveAsLP(boolean value) {
 		relaxed = value;
-	}
-
-	@Override
-	public void setTimeLimit(double value) {
-		iocp.setTm_lim((int) (value * 1000)); //milliseconds
 	}
 
 	@Override

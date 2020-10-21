@@ -16,13 +16,6 @@ public interface ISolver {
 	public void setMinimize(boolean value);
 
 	/**
-	 * Set the time limit in seconds
-	 * @param value the time limit in seconds
-	 * @throws SolverException when the value specified is not valid
-	 */
-	public void setTimeLimit(double value) throws SolverException;
-
-	/**
 	 * Set the MIP gap, default is 1e-4
 	 * @param value the mip gap
 	 * @throws SolverException when the value specified is not valid
